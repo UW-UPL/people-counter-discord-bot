@@ -1,14 +1,21 @@
 import discord
 import random
 import asyncio
+from discord.ext import tasks
 
-client = discord.Client()
+intents = discord.Intents.default()
+intents.message_content = True
+client = discord.Client(intents=intents)
+
 channel_id = 1069334415425147010  # Replace with the ID of the text channel to update
-
 sleep_interval = 0
 is_sleeping = False
 
+with open("DISCORD_BOT_TOKEN", "r") as f:
+    token = f.read()
 
+
+@tasks.loop(minutes=15)
 async def update_channel_name():
     global is_sleeping
     await client.wait_until_ready()
@@ -24,6 +31,7 @@ async def update_channel_name():
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}")
+    update_channel_name.start()
 
 
 @client.event
@@ -60,7 +68,4 @@ async def on_message(message):
         is_sleeping = False
         await message.channel.send("Channel updates resumed.")
 
-with open("DISCORD_BOT_TOKEN", "r") as f:
-    token = f.read()
-client.loop.create_task(update_channel_name())
 client.run(token)
