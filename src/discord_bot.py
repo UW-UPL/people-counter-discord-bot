@@ -3,7 +3,7 @@ import random
 import asyncio
 
 client = discord.Client()
-channel_id = 123456789  # Replace with the ID of the text channel you want to update
+channel_id = 1069334415425147010  # Replace with the ID of the text channel to update
 
 sleep_interval = 0
 is_sleeping = False
@@ -18,7 +18,7 @@ async def update_channel_name():
             random_number = random.randint(1, 100)  # Replace with your desired range of random numbers
             new_name = f"Random Number: {random_number}"
             await channel.edit(name=new_name)
-        await asyncio.sleep(900)  # 900 seconds = 15 minutes
+        await asyncio.sleep(10)  # 900 seconds = 15 minutes
 
 
 @client.event
@@ -60,6 +60,7 @@ async def on_message(message):
         is_sleeping = False
         await message.channel.send("Channel updates resumed.")
 
-
+with open("DISCORD_BOT_TOKEN", "r") as f:
+    token = f.read()
 client.loop.create_task(update_channel_name())
-client.run("YOUR_BOT_TOKEN_HERE")
+client.run(token)
