@@ -1,42 +1,62 @@
 import discord
-import random
-import asyncio
 from discord.ext import tasks
+import os.path
+from yolov7.detect import YoloModel
+import config
+import cv2
 
+# setup bot, model, and camera
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 
-channel_id = 1069334415425147010  # Replace with the ID of the text channel to update
+yolo_model = YoloModel(config.confidence)
+channel_id = config.channel_id
+debug_channel_id = config.debug_channel_id
 sleep_interval = 0
 is_sleeping = False
+cam = cv2.VideoCapture(0)
 
-with open("DISCORD_BOT_TOKEN", "r") as f:
+with open(os.path.join("src", "DISCORD_BOT_TOKEN"), "r") as f:
     token = f.read()
 
 
 @tasks.loop(minutes=15)
-async def update_channel_name():
+async def update_count():
     global is_sleeping
     await client.wait_until_ready()
     channel = client.get_channel(channel_id)
-    while not client.is_closed():
-        if not is_sleeping:
-            random_number = random.randint(1, 100)  # Replace with your desired range of random numbers
-            new_name = f"Random Number: {random_number}"
-            await channel.edit(name=new_name)
-        await asyncio.sleep(10)  # 900 seconds = 15 minutes
+    debug_channel = client.get_channel(debug_channel_id)
+    if not is_sleeping:
+        # get image
+        _, frame = cam.read()
+        cv2.imwrite(os.path.join("src", "img.png"), frame)
+
+        # run inference
+        people_count = yolo_model.run()
+
+        # update channel name
+        if people_count == 1:
+            new_name = f"{people_count}-person-estimated-in-upl"
+        else:
+            new_name = f"{people_count}-people-estimated-in-upl"
+        await channel.edit(name=new_name)
+
+        # update debug channel
+        await debug_channel.send(file=discord.File(os.path.join("src", "img.png")))
+        await debug_channel.send(file=discord.File(os.path.join("src", "output.png")))
+        print(f"Updated Count {people_count}")
 
 
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}")
-    update_channel_name.start()
+    update_count.start()
 
 
 @client.event
 async def on_message(message):
-    global sleep_interval, is_sleeping
+    global sleep_interval, is_sleeping, yolo_model
     if message.author == client.user:
         return
     if message.content.startswith("!sleep"):
@@ -67,5 +87,18 @@ async def on_message(message):
         sleep_interval = 0
         is_sleeping = False
         await message.channel.send("Channel updates resumed.")
+    elif message.content.startswith("!confidence"):
+        try:
+            args = message.content.split()[1:]
+            confidence = float(args[0])
+            if 0 > confidence > 1.0:
+                await message.channel.send("Invalid command: confidence must be between 0.0 and 1.0.")
+                return
+            yolo_model.conf = confidence
+
+            await message.channel.send(f"Confidence set at:{confidence}.")
+        except:
+            await message.channel.send("Invalid command.")
+
 
 client.run(token)
