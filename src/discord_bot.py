@@ -15,6 +15,7 @@ channel_id = config.channel_id
 debug_channel_id = config.debug_channel_id
 sleep_interval = 0
 is_sleeping = False
+debug_mode = True
 cam = cv2.VideoCapture(0)
 
 with open(os.path.join("src", "DISCORD_BOT_TOKEN"), "r") as f:
@@ -23,7 +24,7 @@ with open(os.path.join("src", "DISCORD_BOT_TOKEN"), "r") as f:
 
 @tasks.loop(minutes=15)
 async def update_count():
-    global is_sleeping
+    global is_sleeping, debug_mode
     await client.wait_until_ready()
     channel = client.get_channel(channel_id)
     debug_channel = client.get_channel(debug_channel_id)
@@ -43,9 +44,9 @@ async def update_count():
         await channel.edit(name=new_name)
 
         # update debug channel
-        await debug_channel.send(file=discord.File(os.path.join("src", "img.png")))
-        await debug_channel.send(file=discord.File(os.path.join("src", "output.png")))
-        print(f"Updated Count {people_count}")
+        if debug_mode:
+            await debug_channel.send(file=discord.File(os.path.join("src", "output.png")))
+        print(f"Updated Count: {people_count}")
 
 
 @client.event
@@ -56,7 +57,7 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    global sleep_interval, is_sleeping, yolo_model
+    global sleep_interval, is_sleeping, yolo_model, debug_mode
     if message.author == client.user:
         return
     if message.content.startswith("!sleep"):
@@ -99,6 +100,12 @@ async def on_message(message):
             await message.channel.send(f"Confidence set at:{confidence}.")
         except:
             await message.channel.send("Invalid command.")
+    elif message.content.startswith("!debug on"):
+        debug_mode = True
+        await message.channel.send("Debug mode on.")
+    elif message.content.startswith("!debug off"):
+        debug_mode = False
+        await message.channel.send("Debug mode off.")
 
 
 client.run(token)
