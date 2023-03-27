@@ -16,7 +16,6 @@ debug_channel_id = config.debug_channel_id
 sleep_interval = 0
 is_sleeping = False
 debug_mode = True
-cam = cv2.VideoCapture(0)
 
 with open(os.path.join("src", "DISCORD_BOT_TOKEN"), "r") as f:
     token = f.read()
@@ -30,11 +29,19 @@ async def update_count():
     debug_channel = client.get_channel(debug_channel_id)
     if not is_sleeping:
         # get image
-        _, frame = cam.read()
-        cv2.imwrite(os.path.join("src", "img.png"), frame)
+        cap = cv2.VideoCapture(0)
+        ret, frame = cap.read()
+        if not ret:
+           raise Exception("Could not receive frame.")
+
+        if not cv2.imwrite(os.path.join("src", "img.png"), frame):
+            raise Exception("Could not write image.")
 
         # run inference
         people_count = yolo_model.run()
+
+        cap.release()
+        cv2.destroyAllWindows()
 
         # update channel name
         if people_count == 1:
