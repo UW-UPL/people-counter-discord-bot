@@ -31,11 +31,12 @@ async def update_count():
         # get image
         cap = cv2.VideoCapture(0)
         ret, frame = cap.read()
-        if not ret:
-           raise Exception("Could not receive frame.")
-
-        if not cv2.imwrite(os.path.join("src", "img.png"), frame):
-            raise Exception("Could not write image.")
+        while not ret:
+            print("Could not receive frame. Retrying...")
+            cap = cv2.VideoCapture(0)
+            ret, frame = cap.read()
+        while not cv2.imwrite(os.path.join("src", "img.png"), frame):
+            print("Could not write image. Retrying...")
 
         # run inference
         people_count = yolo_model.run()
