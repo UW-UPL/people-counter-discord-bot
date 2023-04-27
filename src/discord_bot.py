@@ -46,9 +46,9 @@ async def update_count():
 
         # update channel name
         if people_count == 1:
-            new_name = f"{people_count}-person-at-upl"
+            new_name = f"{people_count}-person-in-upl"
         else:
-            new_name = f"{people_count}-people-at-upl"
+            new_name = f"{people_count}-people-in-upl"
         await channel.edit(name=new_name)
 
         # update debug channel
