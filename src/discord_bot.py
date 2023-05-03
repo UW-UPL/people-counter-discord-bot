@@ -4,11 +4,13 @@ import os.path
 from yolov7.detect import YoloModel
 import config
 import cv2
+import logging
 
 # setup bot, model, and camera
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
+handler = logging.FileHandler(filename=os.path.join("src", "discord.log"), encoding='utf-8', mode='w')
 
 yolo_model = YoloModel(config.confidence)
 channel_id = config.channel_id
@@ -116,4 +118,4 @@ async def on_message(message):
         await message.channel.send("Debug mode off.")
 
 
-client.run(token)
+client.run(token, log_handler=handler)
